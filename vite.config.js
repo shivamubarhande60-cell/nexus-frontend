@@ -11,7 +11,16 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err, req, res) => {
+            // Handle offline backend gracefully without throwing unhandled proxy crashes
+            if (res && !res.headersSent) {
+              res.writeHead(503, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Backend offline, using client mock data', fallback: true }));
+            }
+          });
+        }
       }
     }
   },
