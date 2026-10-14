@@ -13,7 +13,11 @@ import {
   RadarChart, 
   PolarGrid, 
   PolarAngleAxis, 
-  PolarRadiusAxis 
+  PolarRadiusAxis,
+  LineChart,
+  Line,
+  Legend,
+  CartesianGrid
 } from 'recharts';
 import { 
   FileText, 
@@ -25,7 +29,9 @@ import {
   PenTool, 
   Printer, 
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  TrendingUp,
+  Gauge
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -35,6 +41,13 @@ export default function ReportViewPage() {
   const [report, setReport] = useState(null);
   const [notes, setNotes] = useState('');
   const [signedOff, setSignedOff] = useState(false);
+
+  // Longitudinal trajectory data (FE-28)
+  const longitudinalData = [
+    { session: 'Session 1 (Jan)', motor: 60, phonology: 52, visual: 50 },
+    { session: 'Session 2 (Jun)', motor: 72, phonology: 65, visual: 58 },
+    { session: 'Session 3 (Oct - Current)', motor: 82, phonology: 76, visual: 65 }
+  ];
 
   useEffect(() => {
     nexusApi.getReport(assessmentId || 'asm_mock_001').then(data => {
@@ -48,7 +61,7 @@ export default function ReportViewPage() {
 
   const handleSignOff = () => {
     setSignedOff(true);
-    alert('Report successfully certified and signed off by ' + (user?.name || 'Dr. Supriya Unde'));
+    alert('Report certified and signed off by ' + (user?.name || 'Dr. Supriya Unde'));
   };
 
   const handlePrint = () => {
@@ -56,7 +69,7 @@ export default function ReportViewPage() {
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div style={{ maxWidth: '1050px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header with Print / Export Actions */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
@@ -91,9 +104,33 @@ export default function ReportViewPage() {
         </div>
       </div>
 
+      {/* Evidence Quality Indicator Cards (FE-26) */}
+      <div className="grid grid-cols-4">
+        <div className="card" style={{ padding: '1rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Data Completeness</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>96.4%</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>All 5 sensor modalities captured</div>
+        </div>
+        <div className="card" style={{ padding: '1rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Model Uncertainty</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#06b6d4' }}>± 4.2%</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Within acceptable bounds</div>
+        </div>
+        <div className="card" style={{ padding: '1rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stylus Sampling Rate</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#818cf8' }}>120 Hz</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>High-fidelity stroke stream</div>
+        </div>
+        <div className="card" style={{ padding: '1rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clinical Evidence Tier</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>Tier II</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Requires secondary validation</div>
+        </div>
+      </div>
+
       {/* Charts Grid */}
       <div className="grid grid-cols-2">
-        {/* SHAP Feature Importance */}
+        {/* SHAP Feature Importance (FE-25) */}
         <div className="card">
           <div className="card-header">
             <div>
@@ -152,7 +189,36 @@ export default function ReportViewPage() {
         </div>
       </div>
 
-      {/* Clinician Review & Certified Sign-off Form */}
+      {/* Longitudinal Progress Chart (FE-28) */}
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <TrendingUp size={18} color="#10b981" /> Longitudinal Multi-Session Trajectory (PRD G6 / FE-28)
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+              Tracking developmental trends across 3 clinical assessment dates
+            </p>
+          </div>
+        </div>
+
+        <div style={{ width: '100%', height: '260px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={longitudinalData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="session" stroke="#94a3b8" fontSize={12} />
+              <YAxis domain={[40, 100]} stroke="#94a3b8" fontSize={12} />
+              <Tooltip contentStyle={{ background: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '0.75rem' }} />
+              <Legend wrapperStyle={{ fontSize: '0.8125rem' }} />
+              <Line type="monotone" dataKey="motor" name="Motor Kinematics" stroke="#ef4444" strokeWidth={2} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="phonology" name="Phonological Latency" stroke="#f59e0b" strokeWidth={2} />
+              <Line type="monotone" dataKey="visual" name="Visual-Spatial Alignment" stroke="#06b6d4" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Clinician Review & Certified Sign-off Form (FE-27) */}
       <div className="card" style={{ border: signedOff ? '1px solid #10b981' : '1px solid var(--border-subtle)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
